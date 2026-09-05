@@ -4,9 +4,10 @@ Domain: Post-Quantum Cryptography & Hardware Security
 Standard: NIST FIPS 203/204/205 / ISO/IEC 17825 Standards
 """
 import datetime
+import math
 from enum import Enum
 from typing import Dict, Any, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class UrgencyLevel(str, Enum):
@@ -22,14 +23,28 @@ class SystemIntegrityStatus(str, Enum):
 
 
 class SystemTaskPayload(BaseModel):
-    task_id: str = Field(..., description="Unique task / case identifier")
-    target_identifier: str = Field(..., description="Entity, patient key, or genomic/cryptographic target")
+    task_id: str = Field(..., description="Unique task / case identifier", min_length=1, max_length=128)
+    target_identifier: str = Field(..., description="Entity, patient key, or genomic/cryptographic target", min_length=1, max_length=128)
     primary_metric: float = Field(..., description="Primary domain measurement or score")
     secondary_metric: float = Field(default=0.0, description="Secondary kinetic or confidence score")
-    status_descriptor: str = Field(default="NOMINAL", description="Status code or phenotype descriptor")
+    status_descriptor: str = Field(default="NOMINAL", description="Status code or phenotype descriptor", max_length=64)
     is_critical_flag: bool = Field(default=False, description="Emergency escalation or high priority trigger")
     attributes: Dict[str, Any] = Field(default_factory=dict, description="Metadata key-value pairs")
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
+
+    @field_validator("primary_metric", "secondary_metric")
+    @classmethod
+    def validate_metric_finite(cls, v: float) -> float:
+        if math.isnan(v) or math.isinf(v):
+            raise ValueError(f"Metric value must be finite, got {v}")
+        return v
+
+    @field_validator("task_id", "target_identifier")
+    @classmethod
+    def validate_identifier_chars(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Identifier must not be blank or whitespace-only")
+        return v.strip()
 
 
 class AgentAlert(BaseModel):

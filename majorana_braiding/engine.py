@@ -3,8 +3,7 @@ Core Algorithmic Engine & Cryptographic / Biological Logic for Majorana Zero Mod
 Domain: Topological Quantum
 Standard: Topological Quantum Computing Specs
 """
-import math
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from .models import FrontierPayload, AgentTelemetryAlert, ExecutionStatus
 
 
