@@ -27,9 +27,9 @@ def test_csv_false_and_true_values(cli, tmp_path):
     source = tmp_path / "tasks.csv"
     output = tmp_path / "results.csv"
     source.write_text(
-        "task_id,target_identifier,primary_metric,secondary_metric,is_critical_flag,status_descriptor\\n"
-        "NO,X1,2,2,False,NOMINAL\\n"
-        "YES,X2,2,2,true,NOMINAL\\n",
+        "task_id,target_identifier,primary_metric,secondary_metric,is_critical_flag,status_descriptor\n"
+        "NO,X1,2,2,False,NOMINAL\n"
+        "YES,X2,2,2,true,NOMINAL\n",
         encoding="utf-8",
     )
     assert cli(["batch", "-i", str(source), "-o", str(output)]) == 0
@@ -44,8 +44,8 @@ def test_csv_false_and_true_values(cli, tmp_path):
 def test_csv_rejects_unknown_bool(cli, tmp_path):
     source = tmp_path / "tasks.csv"
     source.write_text(
-        "task_id,target_identifier,primary_metric,secondary_metric,is_critical_flag\\n"
-        "X,Y,2,2,perhaps\\n", encoding="utf-8",
+        "task_id,target_identifier,primary_metric,secondary_metric,is_critical_flag\n"
+        "X,Y,2,2,perhaps\n", encoding="utf-8",
     )
     with pytest.raises(ValueError, match="Invalid boolean"):
         cli(["batch", "-i", str(source), "-o", str(tmp_path / "out.csv")])
