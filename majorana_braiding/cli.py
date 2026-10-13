@@ -7,6 +7,7 @@ import json
 import sys
 from .models import FrontierPayload
 from .agents import MajoranaCoordinator
+from .braider import simulate_braids
 
 coordinator = MajoranaCoordinator()
 
@@ -46,6 +47,10 @@ def main(argv=None):
     p_batch.add_argument("-i", "--input", required=True)
     p_batch.add_argument("-o", "--output", default="results.csv")
 
+    # Idealized braid computation
+    p_braid = subparsers.add_parser("braid", help="Simulate idealized non-Abelian exchanges")
+    p_braid.add_argument("exchanges", nargs="*", help="12, 23, 12^-1 or 23^-1")
+
     # Serve
     p_serve = subparsers.add_parser("serve", help="Launch FastAPI REST server")
     p_serve.add_argument("--host", default="127.0.0.1")
@@ -74,6 +79,13 @@ def main(argv=None):
             print(f"  Details: {a['technical_details']}")
             print(f"  Action:  {a['actionable_remediation']}")
         print("\n" + "=" * 80)
+        return 0
+
+    if args.command == "braid":
+        try:
+            print(json.dumps(simulate_braids(args.exchanges), indent=2))
+        except ValueError as exc:
+            parser.error(str(exc))
         return 0
 
     if args.command == "chat":
