@@ -7,8 +7,22 @@ import json
 import sys
 from .models import FrontierPayload
 from .agents import MajoranaCoordinator
+from .braider import simulate_braids
 
 coordinator = MajoranaCoordinator()
+
+def parse_csv_bool(value):
+    """Parse CSV boolean strings without Python's bool('False') trap."""
+    if isinstance(value, bool):
+        return value
+    normalized = str(value if value is not None else "").strip().lower()
+    if normalized in {"true", "1", "yes", "y"}:
+        return True
+    if normalized in {"false", "0", "no", "n", ""}:
+        return False
+    raise ValueError(f"Invalid boolean value for is_critical_flag: {value!r}")
+
+
 
 
 def main(argv=None):
@@ -32,6 +46,10 @@ def main(argv=None):
     p_batch = subparsers.add_parser("batch", help="Batch process CSV records")
     p_batch.add_argument("-i", "--input", required=True)
     p_batch.add_argument("-o", "--output", default="results.csv")
+
+    # Idealized braid computation
+    p_braid = subparsers.add_parser("braid", help="Simulate idealized non-Abelian exchanges")
+    p_braid.add_argument("exchanges", nargs="*", help="12, 23, 12^-1 or 23^-1")
 
     # Serve
     p_serve = subparsers.add_parser("serve", help="Launch FastAPI REST server")
@@ -63,6 +81,13 @@ def main(argv=None):
         print("\n" + "=" * 80)
         return 0
 
+    if args.command == "braid":
+        try:
+            print(json.dumps(simulate_braids(args.exchanges), indent=2))
+        except ValueError as exc:
+            parser.error(str(exc))
+        return 0
+
     if args.command == "chat":
         ans = coordinator.query_supervisory_chat(" ".join(args.query))
         print(f"\n[MajoranaCoordinator]:\n{ans}\n")
@@ -74,7 +99,7 @@ def main(argv=None):
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
 
-        out_fields = fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]
+        out_fields = list(dict.fromkeys(fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]))
         out_rows = []
         for r in rows:
             payload = FrontierPayload(
@@ -83,7 +108,7 @@ def main(argv=None):
                 primary_metric=float(r.get("primary_metric", 15.0)),
                 secondary_metric=float(r.get("secondary_metric", 5.0)),
                 status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
+                is_critical_flag=parse_csv_bool(r.get("is_critical_flag", False)),
             )
             dossier = coordinator.process(payload)
             row_dict = dict(r)

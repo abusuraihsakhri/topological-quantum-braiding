@@ -7,7 +7,7 @@ name = "topological-quantum-braiding"
 version = "2.0.0"
 description = "Majorana Zero Mode (MZM) Non-Abelian Anyon Braiding Simulator"
 readme = "README.md"
-authors = [{ name = "Dr. Abu Suraih Sakhri", email = "abusuraih@example.com" }]
+authors = [{ name = "Dr. Abu Suraih Sakhri" }]
 license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -17,7 +17,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = ["pydantic>=2.0,<3"]
+
+[project.optional-dependencies]
+server = ["fastapi>=0.100,<1", "uvicorn>=0.23,<1"]
+test = ["pytest>=7.4,<10", "httpx>=0.24,<1"]
 
 [project.scripts]
 topological-quantum-braiding = "majorana_braiding.cli:main"
@@ -25,3 +29,9 @@ topological-quantum-braiding = "majorana_braiding.cli:main"
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/topological-quantum-braiding"
 Repository = "https://github.com/abusuraihsakhri/topological-quantum-braiding.git"
+
+[tool.setuptools]
+py-modules = ["cli", "simulator", "enrichment", "majorana_braiding_app"]
+
+[tool.setuptools.packages.find]
+include = ["agents*", "majorana_braiding*"]
