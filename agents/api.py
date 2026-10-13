@@ -1,10 +1,13 @@
 """
 FastAPI REST API Server for Topological Quantum Braiding.
 """
+import os
+import hmac
 from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from .base import AuditLogger, PHIGuard
+from .base import AuditLogger, PHIGuard, SecurityException
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -15,6 +18,14 @@ app = FastAPI(
     description="Enterprise Distributed Component Platform (Post-Quantum Cryptography & Hardware Security)",
     version="3.0.0-ENTERPRISE",
 )
+
+
+@app.exception_handler(SecurityException)
+async def handle_sensitive_input(request, exc: SecurityException):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "Input contains a pattern resembling a sensitive identifier"},
+    )
 
 
 class ChatRequest(BaseModel):
@@ -43,13 +54,13 @@ def api_audit(payload: SystemTaskPayload):
 
 @app.post("/api/chat")
 def api_chat(req: ChatRequest):
-    try:
-        ans = supervisor.query_supervisory_chat(req.query)
-        return {"response": ans}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return {"response": supervisor.query_supervisory_chat(req.query)}
 
 
 @app.get("/api/audit/logs")
-def api_audit_logs():
+def api_audit_logs(x_audit_token: str = Header(default="")):
+    """Deny audit-log reads unless an explicit read token is configured."""
+    expected = os.getenv("AUDIT_LOG_READ_TOKEN", "")
+    if not expected or not hmac.compare_digest(x_audit_token, expected):
+        raise HTTPException(status_code=403, detail="Audit-log access is disabled or unauthorized")
     return {"audit_trail": AuditLogger.get_trail(), "verified": AuditLogger.verify_integrity()}
